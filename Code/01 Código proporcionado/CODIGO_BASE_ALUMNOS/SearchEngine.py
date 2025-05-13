@@ -68,7 +68,28 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
 
 def discretize_coords(high_level_plan: np.array, boundaries: Boundaries, map_width: np.int32, map_height: np.int32) -> np.array:
     """ Converts coordiantes from (lat, lon) into (x, y) """
-    ...
+    max_lat = boundaries.max_lat
+    min_lat = boundaries.min_lat
+    max_lon = boundaries.max_lon
+    min_lon = boundaries.min_lon
+
+    step_lat = (max_lat - min_lat) / (map_height - 1)
+    step_lon = (max_lon - min_lon) / (map_width - 1)
+
+    grid_indices = np.empty((len(high_level_plan), 2), dtype=np.int32)
+
+    for i, (lat, lon) in enumerate(high_level_plan):
+        new_y = int(round((lat - min_lat) / step_lat))
+        new_x = int(round((lon - min_lon) / step_lon))
+
+        #insure clamping
+        new_y = max(min_lat, new_y)
+        new_y = min(max_lat, new_y)
+        new_x = max(min_lon, new_x)
+        new_x = min(max_lon, new_x)
+
+        grid_indices[i] = (new_x, new_y)
+    return grid_indices
 
 def path_finding(G: nx.DiGraph,
                  heuristic_function,
@@ -78,7 +99,14 @@ def path_finding(G: nx.DiGraph,
                  map_width: np.int32,
                  map_height: np.int32) -> tuple:
     """ Implementation of the main searching / path finding algorithm """
-    ...
+    path = []
+    pois = discretize_coords(locations, boundaries, map_width, map_height)
+    curr_location = initial_location_index
+    for poi in pois:
+        path_segment = nx.astar_path(G, curr_location, poi, heuristic_function)
+        path.append(path_segment)
+        curr_location = poi
+    return (path, NODES_EXPANDED)
 
 def compute_path_cost(G: nx.DiGraph, solution_plan: list) -> np.float32:
     """ Computes the total cost of the whole planning solution """
