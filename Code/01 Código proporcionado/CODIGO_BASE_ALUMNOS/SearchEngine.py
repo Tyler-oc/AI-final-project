@@ -53,7 +53,7 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
     
     for x in range (width):
         for y in range(height):
-            if detection_map[x, y] > tolerance:
+            if detection_map[y, x] > tolerance:
                 continue
 
             for dirX, dirY in directions:
