@@ -103,11 +103,17 @@ def path_finding(G: nx.DiGraph,
     pois = discretize_coords(locations, boundaries, map_width, map_height)
     curr_location = initial_location_index
     for poi in pois:
-        path_segment = nx.astar_path(G, curr_location, poi, heuristic_function)
+        path_segment = nx.astar_path(G, curr_location, poi, heuristic_function, weight="weight")
         path.append(path_segment)
         curr_location = poi
     return (path, NODES_EXPANDED)
 
 def compute_path_cost(G: nx.DiGraph, solution_plan: list) -> np.float32:
     """ Computes the total cost of the whole planning solution """
-    ...
+    total_cost = 0.0
+    
+    for segment in solution_plan:
+        for i in range(len(segment) - 1):
+            total_cost += G[segment[i]][segment[i+1]]["weight"]
+    
+    return total_cost
