@@ -47,19 +47,19 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
     height, width = detection_map.shape
     directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
-    for i in range(height):
-        for j in range(width):
-            graph.add_node((i, j))
+    for x in range(width):
+        for y in range(height):
+            graph.add_node((x, y))
     
-    for i in range (height):
-        for j in range(width):
-            if detection_map[i, j] > tolerance:
+    for x in range (width):
+        for y in range(height):
+            if detection_map[x, y] > tolerance:
                 continue
 
-            for dirI, dirJ in directions:
-                edgeI, edgeJ = i + dirI, j + dirJ
-                if 0 <= edgeI < height and 0 <= edgeJ < width and detection_map[edgeI, edgeJ] <= tolerance:
-                    graph.add_edge((i, j), (edgeI, edgeJ), weight=detection_map[edgeI, edgeJ])
+            for dirX, dirY in directions:
+                edgeX, edgeY = x + dirX, y + dirY
+                if 0 <= edgeX < width and 0 <= edgeY < height and detection_map[edgeX, edgeY] <= tolerance:
+                    graph.add_edge((x, y), (edgeX, edgeY), weight=detection_map[edgeX, edgeY])
     return graph
             
     
