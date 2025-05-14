@@ -110,7 +110,7 @@ def main() -> None:
 
     # Compute the solution
     solution_plan, nodes_expanded = path_finding(G=G,
-                                 heuristic_function=h2,
+                                 heuristic_function=h1,
                                  locations=POIs, 
                                  initial_location_index=0,
                                  boundaries=boundaries,
