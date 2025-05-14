@@ -39,13 +39,13 @@ def plot_solution(detection_map: np.array, solution_plan: list, bicubic: bool=Tr
     plt.figure(figsize=(8,8))
     plt.title("Solution plan")
     for i in range(len(solution_plan)):
-        start_point = eval(solution_plan[i][0])
+        start_point = eval(str(solution_plan[i][0]))
         plt.scatter(start_point[1], start_point[0], c='black', marker='*', zorder=2)
         path_array = np.zeros(shape=(len(solution_plan[i]), 2))
         for j in range(len(path_array)):
-            path_array[j] = eval(solution_plan[i][j])
+            path_array[j] = eval(str(solution_plan[i][j]))
         plt.plot(path_array[:, 1], path_array[:, 0], zorder=1)
-    final_point = eval(solution_plan[-1][-1])
+    final_point = eval(str(solution_plan[-1][-1]))
     plt.scatter(final_point[1], final_point[0], c='black', marker='*', label=f'Waypoints', zorder=2)
     im = plt.imshow(X=detection_map, cmap='Greens', interpolation='bicubic' if bicubic else None)
     plt.colorbar(im, label='Detection values')

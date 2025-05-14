@@ -60,7 +60,6 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
                 edgeI, edgeJ = i + dirI, j + dirJ
                 if 0 <= edgeI < height and 0 <= edgeJ < width and detection_map[edgeI, edgeJ] <= tolerance:
                     graph.add_edge((i, j), (edgeI, edgeJ), weight=detection_map[edgeI, edgeJ])
-    print("Graph nodes sample:", list(graph.nodes())[:5])
     return graph
             
     
@@ -104,9 +103,15 @@ def path_finding(G: nx.DiGraph,
     
     curr_location = pois[initial_location_index]
     for poi in pois:
-        path_segment = nx.astar_path(G, curr_location, poi, heuristic_function, weight="weight")
-        path.append(path_segment)
-        curr_location = poi
+        if curr_location == poi:
+            continue
+        try:
+            path_segment = nx.astar_path(G, curr_location, poi, heuristic_function, weight="weight")
+            path.append(path_segment)
+            curr_location = poi
+        except nx.NetworkXNoPath:
+            print(f"No path to poi from current location")
+            continue
     return (path, NODES_EXPANDED)
 
 def compute_path_cost(G: nx.DiGraph, solution_plan: list) -> np.float32:
