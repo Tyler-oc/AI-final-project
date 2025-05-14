@@ -13,10 +13,10 @@ def h1(current_node, objective_node) -> np.float32:
     """ First heuristic to implement """
     global NODES_EXPANDED
     h = 0
-    current_lat = current_node.latitude
-    current_lon = current_node.longitude
-    objective_lat = objective_node.latitude
-    objective_lon = objective_node.longitude
+    current_lat = current_node[1]
+    current_lon = current_node[0]
+    objective_lat = objective_node[1]
+    objective_lon = objective_node[0]
 
     h = EPSILON * euclidean_dist(current_lon, current_lat, objective_lon, objective_lat)
     NODES_EXPANDED += 1
@@ -26,10 +26,10 @@ def h2(current_node, objective_node) -> np.float32:
     """ Second heuristic to implement """
     global NODES_EXPANDED
     h = 0
-    current_lat = current_node.latitude
-    current_lon = current_node.longitude
-    objective_lat = objective_node.latitude
-    objective_lon = objective_node.longitude
+    current_lat = current_node[1]
+    current_lon = current_node[0]
+    objective_lat = objective_node[1]
+    objective_lon = objective_node[0]
 
     h = EPSILON * manhattan_dist(current_lon, current_lat, objective_lon, objective_lat)
     NODES_EXPANDED += 1
@@ -53,14 +53,14 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
     
     for i in range (height):
         for j in range(width):
-            if detection_map(i, j) <= tolerance:
+            if detection_map[i, j] > tolerance:
                 continue
 
             for dirI, dirJ in directions:
                 edgeI, edgeJ = i + dirI, j + dirJ
-                if 0 <= edgeI < height and 0 <= edgeJ < width and detection_map(edgeI, edgeJ) <= tolerance:
-                    graph.add_edge((i, j), (edgeI, edgeJ), weight=detection_map(edgeI, edgeJ))
-
+                if 0 <= edgeI < height and 0 <= edgeJ < width and detection_map[edgeI, edgeJ] <= tolerance:
+                    graph.add_edge((i, j), (edgeI, edgeJ), weight=detection_map[edgeI, edgeJ])
+    print("Graph nodes sample:", list(graph.nodes())[:5])
     return graph
             
     
@@ -83,10 +83,10 @@ def discretize_coords(high_level_plan: np.array, boundaries: Boundaries, map_wid
         new_x = int(round((lon - min_lon) / step_lon))
 
         #insure clamping
-        new_y = max(min_lat, new_y)
-        new_y = min(max_lat, new_y)
-        new_x = max(min_lon, new_x)
-        new_x = min(max_lon, new_x)
+        new_y = max(0, new_y)
+        new_y = min(map_height - 1, new_y)
+        new_x = max(0, new_x)
+        new_x = min(map_width - 1, new_x)
 
         grid_indices[i] = (new_x, new_y)
     return grid_indices
@@ -100,8 +100,9 @@ def path_finding(G: nx.DiGraph,
                  map_height: np.int32) -> tuple:
     """ Implementation of the main searching / path finding algorithm """
     path = []
-    pois = discretize_coords(locations, boundaries, map_width, map_height)
-    curr_location = initial_location_index
+    pois = tuple(map(tuple, discretize_coords(locations, boundaries, map_width, map_height)))
+    
+    curr_location = pois[initial_location_index]
     for poi in pois:
         path_segment = nx.astar_path(G, curr_location, poi, heuristic_function, weight="weight")
         path.append(path_segment)

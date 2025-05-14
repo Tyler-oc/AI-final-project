@@ -102,7 +102,6 @@ def main() -> None:
 
     # Plot the detection map (detection fields)
     plot_detection_fields(detection_map=detection_map)
-
     # Build the graph from the detection map
     G = build_graph(detection_map=detection_map, tolerance=execution_parameters['tolerance'])
 
@@ -126,6 +125,7 @@ def main() -> None:
     print(f"Number of expanded nodes: {nodes_expanded}")
 
     # Plot the solution
+    print(solution_plan)
     plot_solution(detection_map=detection_map, solution_plan=solution_plan)
 
 if __name__ == '__main__':
