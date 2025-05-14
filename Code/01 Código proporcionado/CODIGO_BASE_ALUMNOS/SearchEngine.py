@@ -59,7 +59,7 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
             for dirX, dirY in directions:
                 edgeX, edgeY = x + dirX, y + dirY
                 if 0 <= edgeX < width and 0 <= edgeY < height and detection_map[edgeX, edgeY] <= tolerance:
-                    graph.add_edge((x, y), (edgeX, edgeY), weight=detection_map[edgeX, edgeY])
+                    graph.add_edge((x, y), (edgeX, edgeY), weight=detection_map[edgeY, edgeX])
     return graph
             
     
