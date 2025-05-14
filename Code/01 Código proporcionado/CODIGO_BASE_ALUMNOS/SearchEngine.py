@@ -87,7 +87,7 @@ def discretize_coords(high_level_plan: np.array, boundaries: Boundaries, map_wid
         new_x = max(0, new_x)
         new_x = min(map_width - 1, new_x)
 
-        grid_indices[i] = (new_x, new_y)
+        grid_indices[i] = (int(new_x), int(new_y))
     return grid_indices
 
 def path_finding(G: nx.DiGraph,
