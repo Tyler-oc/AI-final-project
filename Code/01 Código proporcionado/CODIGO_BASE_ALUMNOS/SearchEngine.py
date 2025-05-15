@@ -4,6 +4,7 @@ import networkx as nx
 from Boundaries import Boundaries
 from Map import EPSILON
 from Formulas import euclidean_dist, manhattan_dist
+import itertools
 
 # Number of nodes expanded in the heuristic search (stored in a global variable to be updated from the heuristic functions)
 NODES_EXPANDED = 0
@@ -35,6 +36,45 @@ def h2(current_node, objective_node) -> np.float32:
     NODES_EXPANDED += 1
     return h
 
+def _leg_cost_heuristic(a, b):
+    """Cheap symmetric cost used ONLY for ordering (row/col → Euclidean)."""
+    return euclidean_dist(a[0], a[1], b[0], b[1]) * EPSILON
+
+
+def _nearest_neighbour_order(pois, start_idx):
+    """Greedy N-N fallback when POI count is large."""
+    unvisited = set(range(len(pois)))
+    order = [start_idx]
+    current = start_idx
+    unvisited.remove(start_idx)
+
+    while unvisited:
+        nxt = min(unvisited, key=lambda j: _leg_cost_heuristic(pois[current], pois[j]))
+        order.append(nxt)
+        unvisited.remove(nxt)
+        current = nxt
+    return order
+
+def choose_poi_order(pois, start_idx):
+    """
+    Returns an index sequence in tuple format that minimises total leg heuristic cost.
+    Brute force for less than 8 POIs and greedy heuristic otherwise.
+    """
+    n = len(pois)
+    if n - 1 <= 8:                       
+        best_cost = float("inf")
+        best_seq = None
+        others = [i for i in range(n) if i != start_idx]
+        for perm in itertools.permutations(others):
+            seq = (start_idx, *perm)
+            cost = sum(_leg_cost_heuristic(pois[seq[i]], pois[seq[i + 1]])
+                        for i in range(n - 1))
+            if cost < best_cost:
+                best_cost, best_seq = cost, seq
+        return best_seq
+    else:
+        return tuple(_nearest_neighbour_order(pois, start_idx))
+
 def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
     """ Builds an adjacency graph (not an adjacency matrix) from the detection map """
     # The only possible connections from a point in space (now a node in the graph) are:
@@ -58,13 +98,13 @@ def build_graph(detection_map: np.array, tolerance: np.float32) -> nx.DiGraph:
 
             for dirX, dirY in directions:
                 edgeX, edgeY = x + dirX, y + dirY
-                if 0 <= edgeX < width and 0 <= edgeY < height and detection_map[edgeX, edgeY] <= tolerance:
-                    graph.add_edge((x, y), (edgeX, edgeY), weight=detection_map[edgeY, edgeX])
+                if 0 <= edgeX < width and 0 <= edgeY < height:
+                    if detection_map[edgeY, edgeX] <= tolerance:           
+                        graph.add_edge((x, y), (edgeX, edgeY),
+                                       weight=detection_map[edgeY, edgeX])
     return graph
+
             
-    
-
-
 def discretize_coords(high_level_plan: np.array, boundaries: Boundaries, map_width: np.int32, map_height: np.int32) -> np.array:
     """ Converts coordiantes from (lat, lon) into (x, y) """
     max_lat = boundaries.max_lat
@@ -92,26 +132,40 @@ def discretize_coords(high_level_plan: np.array, boundaries: Boundaries, map_wid
 
 def path_finding(G: nx.DiGraph,
                  heuristic_function,
-                 locations: np.array, 
-                 initial_location_index: np.int32, 
+                 locations: np.array,
+                 initial_location_index: np.int32,
                  boundaries: Boundaries,
                  map_width: np.int32,
                  map_height: np.int32) -> tuple:
-    """ Implementation of the main searching / path finding algorithm """
+    """
+    Implementation of the main searching / path-finding algorithm.
+    Now **chooses POI visit order** before running sequential A*.
+    """
     path = []
-    pois = tuple(map(tuple, discretize_coords(locations, boundaries, map_width, map_height)))
-    
-    curr_location = pois[initial_location_index]
-    for poi in pois:
-        if curr_location == poi:
-            continue
+
+    # Discretise lat/lon → grid indices
+    pois = tuple(map(tuple,
+                     discretize_coords(locations,
+                                       boundaries,
+                                       map_width,
+                                       map_height)))
+    order = choose_poi_order(pois, initial_location_index)
+
+    curr_location = pois[order[0]]        
+    for idx in order[1:]:
+        poi = pois[idx]
         try:
-            path_segment = nx.astar_path(G, curr_location, poi, heuristic_function, weight="weight")
+            path_segment = nx.astar_path(G,
+                                         curr_location,
+                                         poi,
+                                         heuristic_function,
+                                         weight="weight")
             path.append(path_segment)
             curr_location = poi
         except nx.NetworkXNoPath:
-            print(f"No path to poi from current location")
+            print("No path to POI from current location")
             continue
+
     return (path, NODES_EXPANDED)
 
 def compute_path_cost(G: nx.DiGraph, solution_plan: list) -> np.float32:
