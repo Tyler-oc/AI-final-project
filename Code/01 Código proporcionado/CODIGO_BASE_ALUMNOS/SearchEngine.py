@@ -39,7 +39,7 @@ def h2(current_node, objective_node) -> np.float32:
 
 
 def _leg_cost_heuristic(a, b):
-    """Cheap symmetric cost used ONLY for ordering (row/col → Euclidean)."""
+    """Cheap cost used only for ordering using Euclidean)."""
     return euclidean_dist(a[0], a[1], b[0], b[1]) * EPSILON
 
 
@@ -60,7 +60,7 @@ def _nearest_neighbour_order(pois, start_idx):
 
 def choose_poi_order(pois, start_idx):
     """
-    Returns an index sequence in tuple format that minimises total leg heuristic cost.
+    Returns an tuple that minimises total leg heuristic cost.
     Brute force for less than 8 POIs and greedy heuristic otherwise.
     """
     n = len(pois)
@@ -159,7 +159,7 @@ def path_finding(
 ) -> tuple:
     """
     Implementation of the main searching / path-finding algorithm.
-    Now **chooses POI visit order** before running sequential A*.
+    Now chooses POI visit order before running A*.
     """
     path = []
 
